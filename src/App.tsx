@@ -1,7 +1,9 @@
-
+import './globals.css'
 const App = () => {
   return (
-    <div>App</div>
+    <div><h1 className="text-3xl font-bold underline">
+    Ali Haider!
+  </h1></div>
   )
 }
 
