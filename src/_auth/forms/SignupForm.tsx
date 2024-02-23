@@ -7,12 +7,16 @@ import { Input } from "@/components/ui/input";
 import { SignupValidation } from "@/lib/validation";
 import { z } from "zod";
 import Loader from "@/components/shared/Loader";
-import { Link } from "react-router-dom";
-import { createUserAccount } from "@/lib/appwrite/api";
-
+import { Link, useNavigate } from "react-router-dom";
+import { useCreateAccount, useSignInAccount } from "@/lib/react-query/queriesAndMutations";
+import { useUserContext } from "@/context/AuthContext";
 const SignupForm = () => {
     const { toast } = useToast();
-    const isLoading = false;
+    const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
+    const navigate = useNavigate();
+    const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateAccount();
+    const { mutateAsync: signInAccount, isPending: isSigningInUser } = useSignInAccount();
+
     const form = useForm<z.infer<typeof SignupValidation>>({
         resolver: zodResolver(SignupValidation),
         defaultValues: {
@@ -31,7 +35,25 @@ const SignupForm = () => {
 
             });
         }
-        // const session=await sigInAccount()
+        const session = await signInAccount({
+            email: values.email,
+            password: values.password,
+        }
+        )
+        if (!session) {
+            toast({ title: "Something went wrong. Please login your new account", });
+            navigate("/sign-in");
+
+            return;
+        }
+        const isLoggedIn = await checkAuthUser();
+        if (isLoggedIn) {
+            form.reset();
+            navigate("/");
+        } else {
+            toast({ title: "Login failed. Please try again.", }); 
+            return;
+          }
     }
     return (
         <Form {...form}>
@@ -93,7 +115,7 @@ const SignupForm = () => {
                         )}
                     />
                     <Button type="submit" className="shad-button_primary">
-                        {isLoading ? (
+                        {isCreatingAccount || isSigningInUser || isUserLoading ? (
                             <div className="flex-center gap-2">
                                 <Loader /> Loading...
                             </div>
@@ -104,7 +126,6 @@ const SignupForm = () => {
                     </p>
                 </form>
             </div>
-
         </Form>
     )
 }
