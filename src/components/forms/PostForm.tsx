@@ -1,40 +1,32 @@
-"use client"
-
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-
-} from "@/components/ui/form"
+    Form,FormControl,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 
-import { Textarea } from "@/components/ui/textarea"
 import FileUploader from "../shared/FileUploader"
+import { PostValidation } from "@/lib/validation"
+import { Models } from "appwrite"
+import { Textarea } from "../ui/textarea"
 
-
-const formSchema = z.object({
-    caption: z.string().min(2, {
-        message: "Username must be at least 2 characters.",
-    }),
-})
-
-const PostForm = () => {
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+type PostFormProps={
+    post?:Models.Document;
+}
+const PostForm = ({post}:PostFormProps) => {
+    const form = useForm<z.infer<typeof PostValidation>>({
+        resolver: zodResolver(PostValidation),
         defaultValues: {
-            caption: "",
+            caption: post ? post?.caption : "",
+            file:[],
+            location:post ? post?.location:"",
+            tags:post ? post.tags.join(',') : ''
         },
     })
 
     // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof formSchema>) {
+    function onSubmit(values: z.infer<typeof PostValidation>) {
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
         console.log(values)
@@ -49,7 +41,7 @@ const PostForm = () => {
                         <FormItem>
                             <FormLabel className="shad-form_label">Caption</FormLabel>
                             <FormControl>
-                                <textarea className="shad-textarea custom-scrollbar" {...field} />
+                                <Textarea className="shad-textarea custom-scrollbar" {...field} />
                             </FormControl>
 
                             <FormMessage className="shad-form_message" />
@@ -63,7 +55,9 @@ const PostForm = () => {
                         <FormItem>
                             <FormLabel className="shad-form_label">Add Photo</FormLabel>
                             <FormControl>
-                                <FileUploader />
+                                <FileUploader 
+                                fieldChange={field.onChange}
+                                mediaUrl={post?.imageUrl}/>
                             </FormControl>
 
                             <FormMessage className="shad-form_message" />
