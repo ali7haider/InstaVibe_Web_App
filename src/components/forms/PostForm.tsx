@@ -2,19 +2,26 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Button } from "@/components/ui/button"
-import {
-    Form,FormControl,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form"
+import {Form,FormControl,FormField,FormItem,FormLabel,FormMessage,} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-
+import { useNavigate } from "react-router-dom"
 import FileUploader from "../shared/FileUploader"
 import { PostValidation } from "@/lib/validation"
 import { Models } from "appwrite"
 import { Textarea } from "../ui/textarea"
+import { useUserContext } from "@/context/AuthContext"
+import { useToast } from "../ui/use-toast"
+import { useCreatePost } from "@/lib/react-query/queriesAndMutations"
 
 type PostFormProps={
     post?:Models.Document;
 }
 const PostForm = ({post}:PostFormProps) => {
+    const {mutateAsync:CreatePost,isPending:isLoadingCreate}= useCreatePost();
+    const {user}=useUserContext();
+    const {toast}=useToast();
+    const navigate =useNavigate();
+
     const form = useForm<z.infer<typeof PostValidation>>({
         resolver: zodResolver(PostValidation),
         defaultValues: {
@@ -26,14 +33,22 @@ const PostForm = ({post}:PostFormProps) => {
     })
 
     // 2. Define a submit handler.
-    function onSubmit(values: z.infer<typeof PostValidation>) {
-        // Do something with the form values.
-        // ✅ This will be type-safe and validated.
-        console.log(values)
+   async function onSubmit(values: z.infer<typeof PostValidation>) {
+        const newPost=await CreatePost({
+            ...values,
+            userId:user.id,
+        })
+        if (!newPost)
+        {
+            toast({
+                title:"Please try again!"
+            })
+        }
+        navigate('/')
     }
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-9 w-full max-w-5xl">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-9 w-full  max-w-5xl">
                 <FormField
                     control={form.control}
                     name="caption"
